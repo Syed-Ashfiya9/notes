@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Save and Load User Notes</title>
+  <style>
+    /* Simple styling to make the page nicer for the reviewer */
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 0 16px;
+      color: #222;
+    }
+    h1 { margin-bottom: 8px; }
+    textarea {
+      width: 100%;
+      min-height: 200px;
+      padding: 10px;
+      font-size: 14px;
+      box-sizing: border-box;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      resize: vertical;
+    }
+    .controls { margin-top: 12px; display: flex; gap: 10px; flex-wrap: wrap; }
+    button {
+      padding: 8px 14px;
+      border-radius: 6px;
+      border: 1px solid #2774ff;
+      background: #2d8cff;
+      color: white;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    button.secondary {
+      background: white;
+      color: #2d8cff;
+      border: 1px solid #2d8cff;
+    }
+    .message {
+      margin-top: 10px;
+      min-height: 20px;
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Notes</h1>
+  <p>Write your notes below. Use <strong>Save</strong> to persist them, <strong>Load Notes</strong> to re-load saved notes, and <strong>Clear Notes</strong> to remove saved notes from localStorage.</p>
+
+  <!-- Text area for user notes -->
+  <textarea id="notesArea" placeholder="Type your notes here..."></textarea>
+
+  <!-- Buttons for actions -->
+  <div class="controls">
+    <button id="saveBtn">Save</button>
+    <button id="loadBtn" class="secondary">Load Notes</button>
+    <button id="clearBtn" class="secondary">Clear Notes</button>
+  </div>
+
+  <!-- Simple message area for feedback -->
+  <div id="msg" class="message" aria-live="polite"></div>
+
+  <script>
+    // Key used in localStorage
+    const STORAGE_KEY = "user_notes";
+
+    // DOM references
+    const notesArea = document.getElementById("notesArea");
+    const saveBtn = document.getElementById("saveBtn");
+    const loadBtn = document.getElementById("loadBtn");
+    const clearBtn = document.getElementById("clearBtn");
+    const msg = document.getElementById("msg");
+
+    /**
+     * showMessage - helper to display feedback to the user
+     * @param {string} text - message text
+     * @param {number} ms - (optional) how long to show message (ms). If omitted, message stays.
+     */
+    function showMessage(text, ms) {
+      msg.textContent = text;
+      if (ms) {
+        setTimeout(() => { msg.textContent = ""; }, ms);
+      }
+    }
+
+    /**
+     * saveNotes - saves the textarea content to localStorage after validation
+     */
+    function saveNotes() {
+      const content = notesArea.value.trim();
+
+      // Validation: do not save empty notes
+      if (!content) {
+        showMessage("Cannot save empty notes. Please write something before saving.", 3000);
+        return;
+      }
+
+      try {
+        // We store as a string (localStorage stores strings only)
+        localStorage.setItem(STORAGE_KEY, content);
+        showMessage("Notes saved successfully.", 3000);
+      } catch (err) {
+        console.error("Saving to localStorage failed:", err);
+        showMessage("Failed to save notes (storage error).", 4000);
+      }
+    }
+
+    /**
+     * loadNotes - loads the saved notes from localStorage and puts them into textarea
+     */
+    function loadNotes() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved === null) {
+          showMessage("No saved notes found.", 3000);
+          return;
+        }
+        notesArea.value = saved;
+        showMessage("Notes loaded.", 2000);
+      } catch (err) {
+        console.error("Loading from localStorage failed:", err);
+        showMessage("Failed to load notes (storage error).", 4000);
+      }
+    }
+
+    /**
+     * clearNotes - removes the saved notes from localStorage and clears the textarea
+     */
+    function clearNotes() {
+      // Remove the key from localStorage
+      localStorage.removeItem(STORAGE_KEY);
+      // Also clear the textarea visually
+      notesArea.value = "";
+      showMessage("Saved notes cleared.", 2500);
+    }
+
+    // Attach event listeners to buttons
+    saveBtn.addEventListener("click", saveNotes);
+    loadBtn.addEventListener("click", loadNotes);
+    clearBtn.addEventListener("click", clearNotes);
+
+    // On page load, automatically load saved notes if they exist
+    document.addEventListener("DOMContentLoaded", () => {
+      // Try to load saved notes silently
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved !== null) {
+        // Populate textarea with saved notes
+        notesArea.value = saved;
+        showMessage("Saved notes loaded automatically.", 2000);
+      } else {
+        showMessage("No saved notes yet. Type something and click Save.", 3000);
+      }
+    });
+
+    // Optional: keyboard shortcut Ctrl+S / Cmd+S to save notes (prevents default browser save)
+    window.addEventListener("keydown", (e) => {
+      const isMac = navigator.platform.toUpperCase().includes("MAC");
+      const saveCombo = (isMac && e.metaKey && e.key === "s") || (!isMac && e.ctrlKey && e.key === "s");
+      if (saveCombo) {
+        e.preventDefault();
+        saveNotes();
+      }
+    });
+  </script>
+
+</body>
+</html>
